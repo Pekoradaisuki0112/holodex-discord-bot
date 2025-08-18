@@ -8,18 +8,6 @@ WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 with open("channels.json") as f:
     CHANNELS = json.load(f)
 
-# 記錄已通知過的直播
-CACHE_FILE = "notified.json"
-try:
-    with open(CACHE_FILE) as f:
-        notified = set(json.load(f))
-except:
-    notified = set()
-
-def save_cache():
-    with open(CACHE_FILE, "w") as f:
-        json.dump(list(notified), f)
-
 # 台灣時間 UTC+8
 TWTZ = timezone(timedelta(hours=8))
 
@@ -38,8 +26,7 @@ def notify(streams, prefix=""):
         channel_id = s["channel"]["id"]
         stream_id = s["id"]
 
-        # 只抓收藏頻道 + 未通知過的直播
-        if channel_id not in CHANNELS or stream_id in notified:
+        if channel_id not in CHANNELS:
             continue
 
         # upcoming 篩選 1 小時內
@@ -50,7 +37,7 @@ def notify(streams, prefix=""):
                 continue
             time_str = f"🕒 {start_time.strftime('%Y-%m-%d %H:%M')} 台灣時間"
 
-        # Discord 訊息
+        # Discord 訊息格式
         msg = {
             "content": f"🎉 {s['channel']['name']} {prefix}！\n**{s['title']}**\n{time_str}\n🔗 https://youtu.be/{stream_id}",
             "username": "Holodex Notifier",
@@ -58,7 +45,6 @@ def notify(streams, prefix=""):
         }
 
         requests.post(WEBHOOK_URL, json=msg)
-        notified.add(stream_id)
 
 def main():
     # 先抓正在直播
@@ -68,9 +54,6 @@ def main():
     # 再抓即將開台
     upcoming_streams = fetch_live("upcoming")
     notify(upcoming_streams, prefix="即將開台")
-
-    # 儲存已通知過的直播
-    save_cache()
 
 if __name__ == "__main__":
     main()
