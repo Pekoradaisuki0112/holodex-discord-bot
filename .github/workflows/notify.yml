@@ -2,8 +2,8 @@ name: Holodex Discord Notifier
 
 on:
   schedule:
-    - cron: "* * * * *"   # 每 1 分鐘執行
-  workflow_dispatch:       # 可以手動觸發
+    - cron: "*/20 * * * *"   # 每 20 分鐘執行
+  workflow_dispatch:          # 可以手動觸發
 
 jobs:
   run:
