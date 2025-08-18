@@ -49,11 +49,9 @@ def notify_embed(streams, prefix=""):
                     "description": f"**{s['title']}**\n{time_str}\n🔗 https://youtu.be/{stream_id}",
                     "color": 0xFF69B4 if prefix=="正在開台" else 0x00BFFF,
                     "thumbnail": {
-                        "url": s["channel"]["photo"]  # 頻道頭像
+                        "url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"  # 直播封面  # 頻道頭像
                     },
-                    "image": {
-                        "url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"  # 直播封面  # 直播封面
-                    }
+                    
                 }
             ]
         }
