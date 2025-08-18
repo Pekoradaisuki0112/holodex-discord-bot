@@ -38,17 +38,19 @@ def notify_embed(streams, prefix=""):
             start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
             if not (now <= start_time <= one_hour_later):
                 continue
-            time_str = f"🕒 {start_time.strftime(' %H:%M')} "
+            time_str = f"🕒 {start_time.strftime(' %H:%M')}"
 
         # embed 訊息
         embed = {
             "username": "Holodex Notifier",
-            "avatar_url": s["channel"]["photo"],
             "embeds": [
                 {
                     "title": f"{s['channel']['name']} {prefix}！",
                     "description": f"**{s['title']}**\n{time_str}\n🔗 https://youtu.be/{stream_id}",
-                    "color": 0xFF69B4 if prefix=="正在開台" else 0x00BFFF  # 粉紅=live, 藍=upcoming
+                    "color": 0xFF69B4 if prefix=="正在開台" else 0x00BFFF,
+                    "thumbnail": {
+                        "url": s["channel"]["photo"]  # 頻道頭像
+                    }
                 }
             ]
         }
