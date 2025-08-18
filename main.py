@@ -20,7 +20,7 @@ def fetch_live(status):
     r = requests.get(url, headers=headers, params=params)
     return r.json()
 
-# --- 發送 embed 通知（使用直播封面作 thumbnail） ---
+# --- 發送 embed 通知 ---
 def notify_embed(streams, prefix=""):
     now = datetime.now(TWTZ)
     one_hour_later = now + timedelta(hours=1)
@@ -38,7 +38,7 @@ def notify_embed(streams, prefix=""):
             start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
             if not (now <= start_time <= one_hour_later):
                 continue
-            time_str = f"🕒 {start_time.strftime(' %H:%M')} "
+            time_str = f"🕒 {start_time.strftime('%Y-%m-%d %H:%M')} 台灣時間"
 
         # embed 訊息
         embed = {
@@ -49,7 +49,7 @@ def notify_embed(streams, prefix=""):
                     "description": f"**{s['title']}**\n{time_str}\n🔗 https://youtu.be/{stream_id}",
                     "color": 0xFF69B4 if prefix=="正在開台" else 0x00BFFF,
                     "thumbnail": {
-                        "url": s.get("thumbnail_url", s["channel"]["photo"])  # 直播封面為主，沒有就用頻道頭像
+                        "url": s.get("thumbnail_url")  # 使用直播封面
                     }
                 }
             ]
