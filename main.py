@@ -38,9 +38,9 @@ def notify_embed(streams, prefix=""):
             start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
             if not (now <= start_time <= one_hour_later):
                 continue
-            time_str = f"🕒 {start_time.strftime(' %H:%M')}"
+            time_str = f"🕒 {start_time.strftime('%Y-%m-%d %H:%M')} 台灣時間"
 
-        # embed 訊息
+        # embed 訊息，使用直播封面做縮圖
         embed = {
             "username": "Holodex Notifier",
             "embeds": [
@@ -49,15 +49,11 @@ def notify_embed(streams, prefix=""):
                     "description": f"**{s['title']}**\n{time_str}\n🔗 https://youtu.be/{stream_id}",
                     "color": 0xFF69B4 if prefix=="正在開台" else 0x00BFFF,
                     "thumbnail": {
-                        "url": s["channel"]["photo"]  # 頻道頭像
-                    },
-                    "image": {
-                        "url": s.get("thumbnail_url") or f"https://i.ytimg.com/vi/{stream_id}/hqdefault.jpg"  # 直播封面
+                        "url": s.get("thumbnail", s["channel"]["photo"])  # 直播封面，如果沒有就用頻道頭像
                     }
                 }
             ]
         }
-
 
         requests.post(WEBHOOK_URL, json=embed)
 
