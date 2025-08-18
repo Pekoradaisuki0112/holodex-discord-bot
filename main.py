@@ -43,6 +43,7 @@ def notify_embed(streams, prefix=""):
         # embed 訊息
         embed = {
             "username": "Holodex Notifier",
+            "avatar_url": s["channel"]["photo"],           # 頻道頭像
             "embeds": [
                 {
                     "title": f"{s['channel']['name']} {prefix}！",
