@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 API_KEY = os.environ["HOLODEX_API_KEY"]
 WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 
+# 收藏頻道
 with open("channels.json") as f:
     CHANNELS = json.load(f)
 
@@ -20,6 +21,9 @@ def save_cache():
     with open(CACHE_FILE, "w") as f:
         json.dump(list(notified), f)
 
+# 台灣時間 UTC+8
+TWTZ = timezone(timedelta(hours=8))
+
 def fetch_live(status):
     url = "https://holodex.net/api/v2/live"
     params = {"status": status}
@@ -28,29 +32,28 @@ def fetch_live(status):
     return r.json()
 
 def notify(streams, prefix=""):
-    now = datetime.now(timezone.utc)
+    now = datetime.now(TWTZ)
     one_hour_later = now + timedelta(hours=1)
 
     for s in streams:
         channel_id = s["channel"]["id"]
         stream_id = s["id"]
 
-        # 篩選收藏頻道 + 未通知過
         if channel_id not in CHANNELS or stream_id in notified:
             continue
 
-        # 如果是 upcoming，篩選 1 小時內
+        # upcoming 篩選 1 小時內
+        time_str = ""
         if prefix == "即將開台":
-            start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00"))
+            start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
             if not (now <= start_time <= one_hour_later):
                 continue
-            time_str = f"🕒 {start_time.strftime('%H:%M UTC')}"
-        else:
-            time_str = ""
+            time_str = f"🕒 {start_time.strftime('%Y-%m-%d %H:%M')} 台灣時間"
 
+        # live 直接通知
         msg = (
             f"🎉 {s['channel']['name']} {prefix}！\n"
-            f"{s['title']}\n"
+            f"**{s['title']}**\n"
             f"{time_str}\n"
             f"🔗 https://youtu.be/{stream_id}"
         )
@@ -71,3 +74,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
