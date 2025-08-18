@@ -35,7 +35,7 @@ def notify(streams, prefix=""):
             start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
             if not (now <= start_time <= one_hour_later):
                 continue
-            time_str = f"🕒 {start_time.strftime('%Y-%m-%d %H:%M')} 台灣時間"
+            time_str = f"🕒 {start_time.strftime('%Y-%m-%d %H:%M')} "
 
         # Discord 訊息格式
         msg = {
