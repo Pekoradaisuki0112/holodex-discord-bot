@@ -54,7 +54,7 @@ def main():
     # 發送長空白分隔訊息到 Discord
     requests.post(
         WEBHOOK_URL,
-        json={"content": "\n\n\n\n\n────────── 分隔線 ──────────\n\n\n\n\n"}
+        json={"content": "\n\n\n\n\n────────── 即將開台 ──────────\n\n\n\n\n"}
     )
 
     # 再抓即將開台
