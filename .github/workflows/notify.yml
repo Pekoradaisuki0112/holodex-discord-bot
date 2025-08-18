@@ -2,35 +2,19 @@ name: Holodex Discord Notifier
 
 on:
   schedule:
-    - cron: "*/20 * * * *"   # 每 20 分鐘跑一次
-  workflow_dispatch:          # 可手動觸發
+    - cron: "*/20 * * * *"   # 每 20 分鐘執行
+  workflow_dispatch:          # 可以手動觸發
 
 jobs:
   run:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 取得專案檔案
-        uses: actions/checkout@v3
-
-      - name: 設定 Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-
-      - name: 安裝套件
-        run: pip install requests
-
-      - name: 執行 Holodex Notifier
-        run: python main.py
+      - run: pip install requests
+      - run: python main.py
         env:
           HOLODEX_API_KEY: ${{ secrets.HOLODEX_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-
-      - name: 更新 notified.json 到 repo
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add notified.json
-          git commit -m "Update notified cache" || echo "No changes to commit"
-          git push
