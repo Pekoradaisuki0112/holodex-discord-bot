@@ -51,9 +51,16 @@ def main():
     live_streams = fetch_live("live")
     notify(live_streams, prefix="正在開台")
 
+    # 發送長空白分隔訊息到 Discord
+    requests.post(
+        WEBHOOK_URL,
+        json={"content": "\n\n\n\n\n────────── 分隔線 ──────────\n\n\n\n\n"}
+    )
+
     # 再抓即將開台
     upcoming_streams = fetch_live("upcoming")
     notify(upcoming_streams, prefix="即將開台")
+
 
 if __name__ == "__main__":
     main()
