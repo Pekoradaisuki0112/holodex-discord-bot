@@ -50,14 +50,14 @@ def notify(streams, prefix=""):
                 continue
             time_str = f"🕒 {start_time.strftime('%Y-%m-%d %H:%M')} 台灣時間"
 
-        # live 直接通知
-        msg = (
-            f"🎉 {s['channel']['name']} {prefix}！\n"
-            f"**{s['title']}**\n"
-            f"{time_str}\n"
-            f"🔗 https://youtu.be/{stream_id}"
-        )
-        requests.post(WEBHOOK_URL, json={"content": msg})
+        # Discord 訊息格式
+        msg = {
+            "content": f"🎉 {s['channel']['name']} {prefix}！\n**{s['title']}**\n{time_str}\n🔗 https://youtu.be/{stream_id}",
+            "username": "Holodex Notifier",
+            "avatar_url": s["channel"]["photo"]  # 頻道頭像
+        }
+
+        requests.post(WEBHOOK_URL, json=msg)
         notified.add(stream_id)
 
 def main():
@@ -69,9 +69,8 @@ def main():
     upcoming_streams = fetch_live("upcoming")
     notify(upcoming_streams, prefix="即將開台")
 
-    # 儲存通知過的直播
+    # 儲存已通知直播
     save_cache()
 
 if __name__ == "__main__":
     main()
-
