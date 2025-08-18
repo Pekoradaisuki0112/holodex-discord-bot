@@ -50,10 +50,14 @@ def notify_embed(streams, prefix=""):
                     "color": 0xFF69B4 if prefix=="正在開台" else 0x00BFFF,
                     "thumbnail": {
                         "url": s["channel"]["photo"]  # 頻道頭像
+                    },
+                    "image": {
+                        "url": s.get("thumbnail_url") or f"https://i.ytimg.com/vi/{stream_id}/hqdefault.jpg"  # 直播封面
                     }
                 }
             ]
         }
+
 
         requests.post(WEBHOOK_URL, json=embed)
 
