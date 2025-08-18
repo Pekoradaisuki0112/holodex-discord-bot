@@ -60,4 +60,3 @@ if __name__ == "__main__":
         print("\n更新時間:", datetime.now(taiwan_tz).strftime("%Y-%m-%d %H:%M:%S"))
         display_lives()
         time.sleep(20 * 60)  # 20 分鐘
-
