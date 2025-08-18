@@ -1,0 +1,21 @@
+name: Holodex Notifier
+
+# 觸發條件
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # 每 30 分鐘執行一次
+  workflow_dispatch:          # 允許手動觸發
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3        # 取得專案檔案
+      - uses: actions/setup-python@v4    # 設定 Python
+        with:
+          python-version: "3.10"
+      - run: pip install requests        # 安裝 requests 套件
+      - run: python main.py              # 執行程式
+        env:
+          HOLODEX_API_KEY: ${{ secrets.HOLODEX_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
