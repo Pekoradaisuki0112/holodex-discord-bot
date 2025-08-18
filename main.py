@@ -52,7 +52,7 @@ def notify_embed(streams, prefix=""):
                         "url": s["channel"]["photo"]  # 頻道頭像
                     },
                     "image": {
-                        "url": s.get("thumbnail_url")  # 直播封面
+                        "url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"  # 直播封面  # 直播封面
                     }
                 }
             ]
