@@ -24,10 +24,9 @@ def build_embeds(live_streams, upcoming_streams):
         stream_id = s["id"]
         embeds.append({
             "title": s["channel"]["name"],
-            "description": f"[{s['title']}](https://youtu.be/{stream_id})",
+            "description": f"🎥 [{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFF69B4,
-            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"},
-
+            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
 
     # ⏰ 一小時後開播
@@ -41,10 +40,9 @@ def build_embeds(live_streams, upcoming_streams):
             stream_id = s["id"]
             embeds.append({
                 "title": s["channel"]["name"],
-                "description": f"[{s['title']}](https://youtu.be/{stream_id})",
+                "description": f"⏰ [{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0x00BFFF,
-                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"},
-
+                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
 
     return embeds
@@ -52,7 +50,7 @@ def build_embeds(live_streams, upcoming_streams):
 def send_discord(embeds):
     payload = {
         "username": "Holodex Notifier",
-        "avatar_url": s["channel"]["photo"],           # 頻道頭像
+        "avatar_url": "https://i.imgur.com/your-default-avatar.png",
         "embeds": embeds
     }
     requests.post(WEBHOOK_URL, json=payload)
