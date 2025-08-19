@@ -20,54 +20,58 @@ def fetch_live(status):
     r = requests.get(url, headers=headers, params=params)
     return r.json()
 
-# --- 發送 embed 通知 ---
-def notify_embed(streams, prefix=""):
+# --- 整理 embed 訊息 ---
+def create_embed(live_streams, upcoming_streams):
     now = datetime.now(TWTZ)
     one_hour_later = now + timedelta(hours=1)
 
-    for s in streams:
-        channel_id = s["channel"]["id"]
-        stream_id = s["id"]
+    description = ""
 
-        if channel_id not in CHANNELS:
-            continue
+    # 直播中
+    if live_streams:
+        description += "🎥 **直播中**\n"
+        for s in live_streams:
+            if s["channel"]["id"] not in CHANNELS:
+                continue
+            description += f"{s['channel']['name']} - [{s['title']}](https://youtu.be/{s['id']})\n"
+            description += f"{f'https://img.youtube.com/vi/{s['id']}/maxresdefault.jpg'}\n\n"
 
-        # upcoming 篩選 1 小時內
-        time_str = ""
-        if prefix == "即將開台":
+    # 一小時內開播
+    if upcoming_streams:
+        description += "⏰ **一小時後開播**\n"
+        for s in upcoming_streams:
+            if s["channel"]["id"] not in CHANNELS:
+                continue
             start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
             if not (now <= start_time <= one_hour_later):
                 continue
-            time_str = f"🕒 {start_time.strftime(' %H:%M')} "
+            description += f"{s['channel']['name']} - [{s['title']}](https://youtu.be/{s['id']})\n"
+            description += f"{f'https://img.youtube.com/vi/{s['id']}/maxresdefault.jpg'}\n\n"
 
-        # embed 訊息
-        embed = {
-            "username": "Holodex Notifier",
-            "avatar_url": s["channel"]["photo"],           # 頻道頭像
-            "embeds": [
-                {
-                    "title": f"{s['channel']['name']} {prefix}！",
-                    "description": f"**{s['title']}**\n{time_str}\n🔗 https://youtu.be/{stream_id}",
-                    "color": 0xFF69B4 if prefix=="正在開台" else 0x00BFFF,
-                    "thumbnail": {
-                        "url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"  # 直播封面  # 頻道頭像
-                    }
-                    
-                }
-            ]
-        }
+    embed = {
+        "username": "Holodex Notifier",
+        "avatar_url": None,  # 可以改成固定或每條訊息改不同 avatar
+        "embeds": [
+            {
+                "title": "📢 VTuber 直播通知",
+                "description": description.strip(),
+                "color": 0xFF69B4,
+                "timestamp": now.isoformat()
+            }
+        ]
+    }
+    return embed
 
-        requests.post(WEBHOOK_URL, json=embed)
+# --- 發送通知 ---
+def send_notification(embed):
+    requests.post(WEBHOOK_URL, json=embed)
 
 # --- 主程式 ---
 def main():
-    # 先抓正在直播
     live_streams = fetch_live("live")
-    notify_embed(live_streams, prefix="正在開台")
-
-    # 再抓即將開台
     upcoming_streams = fetch_live("upcoming")
-    notify_embed(upcoming_streams, prefix="即將開台")
+    embed = create_embed(live_streams, upcoming_streams)
+    send_notification(embed)
 
 if __name__ == "__main__":
     main()
