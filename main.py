@@ -27,7 +27,7 @@ def build_embeds(live_streams, upcoming_streams):
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFF69B4,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"},
-            "avatar_url": s["channel"]["photo"]
+            "channel_photo": s["channel"]["photo"]  # 暫存用
         })
 
     # ⏰ 一小時後開播
@@ -44,15 +44,20 @@ def build_embeds(live_streams, upcoming_streams):
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0x00BFFF,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"},
-                "avatar_url": s["channel"]["photo"]
+                "channel_photo": s["channel"]["photo"]  # 暫存用
             })
 
     return embeds
 
 def send_discord(embeds):
-    # 每個 embed 的 avatar_url Discord webhook 不支援單獨設置
-    # 所以取第一個主播的頭像作為 webhook avatar_url
-    webhook_avatar = embeds[0]["avatar_url"] if embeds else "https://i.imgur.com/your-default-avatar.png"
+    # 找最新正在直播的主播頭像作為 webhook avatar
+    live_embeds = [e for e in embeds if e["color"] == 0xFF69B4]
+    webhook_avatar = live_embeds[-1]["channel_photo"] if live_embeds else "https://i.imgur.com/your-default-avatar.png"
+
+    # 移除暫存用的 channel_photo
+    for e in embeds:
+        e.pop("channel_photo", None)
+
     payload = {
         "username": "Holodex Notifier",
         "avatar_url": webhook_avatar,
