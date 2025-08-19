@@ -18,67 +18,67 @@ def fetch_live(status):
     r = requests.get(url, headers=headers, params=params)
     return r.json()
 
-def build_embed(live_streams, upcoming_streams):
+def build_embeds(live_streams, upcoming_streams):
     embeds = []
 
     # 🎥 直播中
-    live_items = []
-    for s in live_streams:
-        if s["channel"]["id"] not in CHANNELS:
-            continue
-        stream_id = s["id"]
-        live_items.append({
-            "name": f"[{s['channel']['name']}](https://youtu.be/{stream_id})",
-            "value": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg",
-            "inline": False
-        })
-
-    if live_items:
+    live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
+    if live_filtered:
         embeds.append({
             "title": "🎥 直播中",
-            "color": 0xFF69B4,
-            "fields": live_items
+            "color": 0xFF69B4
         })
+        for s in live_filtered:
+            stream_id = s["id"]
+            embeds.append({
+                "title": s["channel"]["name"],
+                "url": f"https://youtu.be/{stream_id}",
+                "description": s["title"],
+                "image": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"},
+                "color": 0xFF69B4
+            })
 
     # ⏰ 一小時後開播
     now = datetime.now(TWTZ)
     one_hour_later = now + timedelta(hours=1)
-    upcoming_items = []
+    upcoming_filtered = []
     for s in upcoming_streams:
         if s["channel"]["id"] not in CHANNELS:
             continue
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
-        if not (now <= start_time <= one_hour_later):
-            continue
-        stream_id = s["id"]
-        upcoming_items.append({
-            "name": f"[{s['channel']['name']}](https://youtu.be/{stream_id})",
-            "value": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg",
-            "inline": False
-        })
+        if now <= start_time <= one_hour_later:
+            upcoming_filtered.append(s)
 
-    if upcoming_items:
+    if upcoming_filtered:
         embeds.append({
             "title": "⏰ 一小時後開播",
-            "color": 0x00BFFF,
-            "fields": upcoming_items
+            "color": 0x00BFFF
         })
+        for s in upcoming_filtered:
+            stream_id = s["id"]
+            embeds.append({
+                "title": s["channel"]["name"],
+                "url": f"https://youtu.be/{stream_id}",
+                "description": s["title"],
+                "image": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"},
+                "color": 0x00BFFF
+            })
 
+    return embeds
+
+def send_discord(embeds):
     payload = {
         "username": "Holodex Notifier",
         "avatar_url": "https://i.imgur.com/your-default-avatar.png",
         "embeds": embeds
     }
-    return payload
-
-def send_discord(payload):
     requests.post(WEBHOOK_URL, json=payload)
 
 def main():
     live_streams = fetch_live("live")
     upcoming_streams = fetch_live("upcoming")
-    embed_payload = build_embed(live_streams, upcoming_streams)
-    send_discord(embed_payload)
+    embeds = build_embeds(live_streams, upcoming_streams)
+    send_discord(embeds)
 
 if __name__ == "__main__":
     main()
