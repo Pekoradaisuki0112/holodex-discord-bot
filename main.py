@@ -20,24 +20,15 @@ def build_embeds(live_streams, upcoming_streams):
 
     # 🎥 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
-    if live_filtered:
-        live_embed = {
-            "title": "🎥 直播中",
+    for s in live_filtered:
+        stream_id = s["id"]
+        embeds.append({
+            "title": f"{s['channel']['name']} 🎥 直播中",
+            "url": f"https://youtu.be/{stream_id}",
+            "description": s["title"],
             "color": 0xFF69B4,
-            "fields": []
-        }
-        for s in live_filtered:
-            stream_id = s["id"]
-            live_embed["fields"].append({
-                "name": f"[{s['channel']['name']}](https://youtu.be/{stream_id})",
-                "value": s["title"],
-                "inline": True
-            })
-        # 放右邊小圖，使用 thumbnail
-        live_embed["thumbnail"] = {
-            "url": "https://i.imgur.com/your-default-thumb.png"  # 可以改成統一小圖
-        }
-        embeds.append(live_embed)
+            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
+        })
 
     # ⏰ 一小時後開播
     now = datetime.now(TWTZ)
@@ -50,23 +41,15 @@ def build_embeds(live_streams, upcoming_streams):
         if now <= start_time <= one_hour_later:
             upcoming_filtered.append(s)
 
-    if upcoming_filtered:
-        upcoming_embed = {
-            "title": "⏰ 一小時後開播",
+    for s in upcoming_filtered:
+        stream_id = s["id"]
+        embeds.append({
+            "title": f"{s['channel']['name']} ⏰ 一小時後開播",
+            "url": f"https://youtu.be/{stream_id}",
+            "description": s["title"],
             "color": 0x00BFFF,
-            "fields": []
-        }
-        for s in upcoming_filtered:
-            stream_id = s["id"]
-            upcoming_embed["fields"].append({
-                "name": f"[{s['channel']['name']}](https://youtu.be/{stream_id})",
-                "value": s["title"],
-                "inline": True
-            })
-        upcoming_embed["thumbnail"] = {
-            "url": "https://i.imgur.com/your-default-thumb.png"
-        }
-        embeds.append(upcoming_embed)
+            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
+        })
 
     return embeds
 
