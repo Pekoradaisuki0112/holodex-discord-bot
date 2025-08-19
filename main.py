@@ -22,12 +22,15 @@ def build_embeds(live_streams, upcoming_streams):
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
     for s in live_filtered:
         stream_id = s["id"]
-        embeds.append({
-            "title": f"🎥 {s['channel']['name']}",
+        embed = {
+            "username": "Holodex Notifier",
+            "avatar_url": s["channel"]["photo"],  # 頻道頭像
+            "title": s["channel"]["name"],
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFF69B4,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
-        })
+        }
+        embeds.append(embed)
 
     # ⏰ 一小時後開播
     now = datetime.now(TWTZ)
@@ -38,19 +41,20 @@ def build_embeds(live_streams, upcoming_streams):
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
-            embeds.append({
-                "title": f"⏰ {s['channel']['name']}",
+            embed = {
+                "username": "Holodex Notifier",
+                "avatar_url": s["channel"]["photo"],  # 頻道頭像
+                "title": s["channel"]["name"],
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0x00BFFF,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
-            })
+            }
+            embeds.append(embed)
 
     return embeds
 
 def send_discord(embeds):
     payload = {
-        "username": "Holodex Notifier",
-        "avatar_url": "https://i.imgur.com/your-default-avatar.png",
         "embeds": embeds
     }
     requests.post(WEBHOOK_URL, json=payload)
