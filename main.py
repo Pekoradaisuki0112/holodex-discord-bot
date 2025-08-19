@@ -10,15 +10,20 @@ with open("channels.json") as f:
 TWTZ = timezone(timedelta(hours=8))
 
 def fetch_live(status):
-    url = "https://holodex.net/api/v2/live"
-    headers = {"X-APIKEY": API_KEY}
-    r = requests.get(url, headers=headers, params={"status": status})
+    r = requests.get(
+        "https://holodex.net/api/v2/live",
+        headers={"X-APIKEY": API_KEY},
+        params={"status": status}
+    )
     return r.json()
 
 def build_embeds(live_streams, upcoming_streams):
     embeds = []
 
-    # 🎥 直播中
+    now = datetime.now(TWTZ)
+    one_hour_later = now + timedelta(hours=1)
+
+    # 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
     for s in live_filtered:
         stream_id = s["id"]
@@ -26,13 +31,10 @@ def build_embeds(live_streams, upcoming_streams):
             "title": s["channel"]["name"],
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFF69B4,
-            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"},
-            "channel_photo": s["channel"]["photo"]  # 暫存用
+            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
 
-    # ⏰ 一小時後開播
-    now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=1)
+    # 一小時後開播
     for s in upcoming_streams:
         if s["channel"]["id"] not in CHANNELS:
             continue
@@ -43,24 +45,19 @@ def build_embeds(live_streams, upcoming_streams):
                 "title": s["channel"]["name"],
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0x00BFFF,
-                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"},
-                "channel_photo": s["channel"]["photo"]  # 暫存用
+                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
 
     return embeds
 
-def send_discord(embeds):
-    # 找最新正在直播的主播頭像作為 webhook avatar
-    live_embeds = [e for e in embeds if e["color"] == 0xFF69B4]
-    webhook_avatar = live_embeds[-1]["channel_photo"] if live_embeds else "https://i.imgur.com/your-default-avatar.png"
-
-    # 移除暫存用的 channel_photo
-    for e in embeds:
-        e.pop("channel_photo", None)
+def send_discord(live_streams, embeds):
+    # webhook avatar 取最新正在直播的主播頭像
+    live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
+    avatar_url = live_filtered[-1]["channel"]["photo"] if live_filtered else "https://i.imgur.com/your-default-avatar.png"
 
     payload = {
         "username": "Holodex Notifier",
-        "avatar_url": webhook_avatar,
+        "avatar_url": avatar_url,
         "embeds": embeds
     }
     requests.post(WEBHOOK_URL, json=payload)
@@ -69,7 +66,7 @@ def main():
     live_streams = fetch_live("live")
     upcoming_streams = fetch_live("upcoming")
     embeds = build_embeds(live_streams, upcoming_streams)
-    send_discord(embeds)
+    send_discord(live_streams, embeds)
 
 if __name__ == "__main__":
     main()
