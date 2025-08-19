@@ -23,8 +23,8 @@ def build_embeds(live_streams, upcoming_streams):
     for s in live_filtered:
         stream_id = s["id"]
         embeds.append({
-            "title": s["channel"]["name"],
-            "description": f"🎥 [{s['title']}](https://youtu.be/{stream_id})",
+            "title": f"🎥 {s['channel']['name']}",
+            "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFF69B4,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
@@ -39,8 +39,8 @@ def build_embeds(live_streams, upcoming_streams):
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
             embeds.append({
-                "title": s["channel"]["name"],
-                "description": f"⏰ [{s['title']}](https://youtu.be/{stream_id})",
+                "title": f"⏰ {s['channel']['name']}",
+                "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0x00BFFF,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
