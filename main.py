@@ -18,36 +18,33 @@ def fetch_live(status):
 def build_embeds(live_streams, upcoming_streams):
     embeds = []
 
-    now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=1)
-
     # 🎥 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
     for s in live_filtered:
         stream_id = s["id"]
-        channel_id = s["channel"]["id"]
         embeds.append({
-            "title": f"🎥 {s['channel']['name']}",
-            "url": f"https://www.youtube.com/channel/{channel_id}",
+            "title": s["channel"]["name"],
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFF69B4,
-            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"}
+            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"},
+            "footer": {"text": "🎥 直播中"}
         })
 
     # ⏰ 一小時後開播
+    now = datetime.now(TWTZ)
+    one_hour_later = now + timedelta(hours=1)
     for s in upcoming_streams:
         if s["channel"]["id"] not in CHANNELS:
             continue
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
-            channel_id = s["channel"]["id"]
             embeds.append({
-                "title": f"⏰ {s['channel']['name']}",
-                "url": f"https://www.youtube.com/channel/{channel_id}",
+                "title": s["channel"]["name"],
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0x00BFFF,
-                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"}
+                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"},
+                "footer": {"text": "⏰ 一小時後開播"}
             })
 
     return embeds
