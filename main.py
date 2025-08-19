@@ -9,65 +9,76 @@ WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 with open("channels.json") as f:
     CHANNELS = json.load(f)
 
-# 台灣時間 UTC+8
 TWTZ = timezone(timedelta(hours=8))
 
-# --- 抓取直播 ---
 def fetch_live(status):
     url = "https://holodex.net/api/v2/live"
-    params = {"status": status}
     headers = {"X-APIKEY": API_KEY}
+    params = {"status": status}
     r = requests.get(url, headers=headers, params=params)
     return r.json()
 
-# --- 發送 embed 通知 ---
-def notify_embed(streams, prefix=""):
+def build_embed(live_streams, upcoming_streams):
+    embeds = []
+
+    # 🎥 直播中
+    live_items = []
+    for s in live_streams:
+        if s["channel"]["id"] not in CHANNELS:
+            continue
+        stream_id = s["id"]
+        live_items.append({
+            "name": f"[{s['channel']['name']}](https://youtu.be/{stream_id})",
+            "value": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg",
+            "inline": False
+        })
+
+    if live_items:
+        embeds.append({
+            "title": "🎥 直播中",
+            "color": 0xFF69B4,
+            "fields": live_items
+        })
+
+    # ⏰ 一小時後開播
     now = datetime.now(TWTZ)
     one_hour_later = now + timedelta(hours=1)
-
-    for s in streams:
-        channel_id = s["channel"]["id"]
-        stream_id = s["id"]
-
-        if channel_id not in CHANNELS:
+    upcoming_items = []
+    for s in upcoming_streams:
+        if s["channel"]["id"] not in CHANNELS:
             continue
+        start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
+        if not (now <= start_time <= one_hour_later):
+            continue
+        stream_id = s["id"]
+        upcoming_items.append({
+            "name": f"[{s['channel']['name']}](https://youtu.be/{stream_id})",
+            "value": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg",
+            "inline": False
+        })
 
-        # upcoming 篩選 1 小時內
-        time_str = ""
-        if prefix == "即將開台":
-            start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
-            if not (now <= start_time <= one_hour_later):
-                continue
-            time_str = f"🕒 {start_time.strftime(' %H:%M')} "
+    if upcoming_items:
+        embeds.append({
+            "title": "⏰ 一小時後開播",
+            "color": 0x00BFFF,
+            "fields": upcoming_items
+        })
 
-        # embed 訊息
-        embed = {
-            "username": "Holodex Notifier",
-            "avatar_url": s["channel"]["photo"],           # 頻道頭像
-            "embeds": [
-                {
-                    "title": f"{s['channel']['name']} {prefix}！",
-                    "description": f"**{s['title']}**\n{time_str}\n🔗 https://youtu.be/{stream_id}",
-                    "color": 0xFF69B4 if prefix=="正在開台" else 0x00BFFF,
-                    "thumbnail": {
-                        "url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"  # 直播封面  # 頻道頭像
-                    }
-                    
-                }
-            ]
-        }
+    payload = {
+        "username": "Holodex Notifier",
+        "avatar_url": "https://i.imgur.com/your-default-avatar.png",
+        "embeds": embeds
+    }
+    return payload
 
-        requests.post(WEBHOOK_URL, json=embed)
+def send_discord(payload):
+    requests.post(WEBHOOK_URL, json=payload)
 
-# --- 主程式 ---
 def main():
-    # 先抓正在直播
     live_streams = fetch_live("live")
-    notify_embed(live_streams, prefix="正在開台")
-
-    # 再抓即將開台
     upcoming_streams = fetch_live("upcoming")
-    notify_embed(upcoming_streams, prefix="即將開台")
+    embed_payload = build_embed(live_streams, upcoming_streams)
+    send_discord(embed_payload)
 
 if __name__ == "__main__":
     main()
