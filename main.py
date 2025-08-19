@@ -24,36 +24,28 @@ def build_embeds(live_streams, upcoming_streams):
         stream_id = s["id"]
         channel_id = s["channel"]["id"]
         embeds.append({
-            "title": s["channel"]["name"],  # 主播名字
-            "url": f"https://www.youtube.com/channel/{channel_id}",  # 跳到頻道首頁
-            "description": f"[{s['title']}](https://youtu.be/{stream_id})",  # 標題點擊跳直播
+            "title": f"🎥 [{s['channel']['name']}](https://www.youtube.com/channel/{channel_id})",
+            "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFF69B4,
-            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"},
-            "footer": {"text": "🎥 直播中"}
+            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"}
         })
 
     # ⏰ 一小時後開播
     now = datetime.now(TWTZ)
     one_hour_later = now + timedelta(hours=1)
-    upcoming_filtered = []
     for s in upcoming_streams:
         if s["channel"]["id"] not in CHANNELS:
             continue
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
         if now <= start_time <= one_hour_later:
-            upcoming_filtered.append(s)
-
-    for s in upcoming_filtered:
-        stream_id = s["id"]
-        channel_id = s["channel"]["id"]
-        embeds.append({
-            "title": s["channel"]["name"],
-            "url": f"https://www.youtube.com/channel/{channel_id}",
-            "description": f"[{s['title']}](https://youtu.be/{stream_id})",
-            "color": 0x00BFFF,
-            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"},
-            "footer": {"text": "⏰ 一小時後開播"}
-        })
+            stream_id = s["id"]
+            channel_id = s["channel"]["id"]
+            embeds.append({
+                "title": f"⏰ [{s['channel']['name']}](https://www.youtube.com/channel/{channel_id})",
+                "description": f"[{s['title']}](https://youtu.be/{stream_id})",
+                "color": 0x00BFFF,
+                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"}
+            })
 
     return embeds
 
