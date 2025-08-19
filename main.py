@@ -23,9 +23,9 @@ def build_embeds(live_streams, upcoming_streams):
     for s in live_filtered:
         stream_id = s["id"]
         embeds.append({
-            "title": s["channel"]["name"],
-            "url": f"https://youtu.be/{stream_id}",
-            "description": s["title"],
+            "title": s["title"],  # 直播標題
+            "url": f"https://youtu.be/{stream_id}",  # 點擊標題跳直播
+            "description": f"[{s['channel']['name']}](https://www.youtube.com/channel/{s['channel']['id']})",  # 點擊跳頻道首頁
             "color": 0xFF69B4,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"},
             "footer": {"text": "🎥 直播中"}
@@ -45,9 +45,9 @@ def build_embeds(live_streams, upcoming_streams):
     for s in upcoming_filtered:
         stream_id = s["id"]
         embeds.append({
-            "title": s["channel"]["name"],
-            "url": f"https://youtu.be/{stream_id}",
-            "description": s["title"],
+            "title": s["title"],  # 直播標題
+            "url": f"https://youtu.be/{stream_id}",  # 點擊標題跳直播
+            "description": f"[{s['channel']['name']}](https://www.youtube.com/channel/{s['channel']['id']})",  # 點擊跳頻道首頁
             "color": 0x00BFFF,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/maxresdefault.jpg"},
             "footer": {"text": "⏰ 一小時後開播"}
