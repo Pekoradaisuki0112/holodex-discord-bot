@@ -66,7 +66,7 @@ def build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mention
                 time_str = start_time.strftime("%H:%M")
                 embeds.append({
                     "title": s["channel"]["name"],
-                    "description": f"[{s['title']}](https://youtu.be/{stream_id})\n預計開播時間: {time_str}",
+                    "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                     "color": 0x00BFFF,
                     "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
                 })
@@ -79,7 +79,7 @@ def build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mention
             time_str = start_time.strftime("%H:%M")
             embeds.append({
                 "title": f"{s['channel']['name']} (提及)",
-                "description": f"[{s['title']}](https://youtu.be/{stream_id})\n預計開播時間: {time_str}",
+                "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0xADD8E6,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
