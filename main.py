@@ -91,9 +91,19 @@ def send_discord(live_streams, embeds):
         print("沒有新的直播或即將開播的串流")
         return
 
-    # webhook avatar 取最新正在直播的主播頭像
-    live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
-    avatar_url = live_filtered[-1]["channel"]["photo"] if live_filtered else "https://i.imgur.com/your-default-avatar.png"
+    # 如果最後一個 embed 是被提及的，用它的頭像；否則用主頻道頭像
+    last_embed = embeds[-1]
+    last_title = last_embed["title"]
+    
+    # 檢查是否有 "(提及)" 字樣
+    if "(提及)" in last_title:
+        # 從被提及的 live 或 upcoming 中找對應頻道
+        mentioned_streams = [s for s in live_streams if f"{s['channel']['name']} (提及)" == last_title]
+        avatar_url = mentioned_streams[-1]["channel"]["photo"] if mentioned_streams else "https://i.imgur.com/your-default-avatar.png"
+    else:
+        # 主頻道
+        live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
+        avatar_url = live_filtered[-1]["channel"]["photo"] if live_filtered else "https://i.imgur.com/your-default-avatar.png"
 
     payload = {
         "username": "Holodex Notifier",
@@ -106,6 +116,7 @@ def send_discord(live_streams, embeds):
         r.raise_for_status()
     except requests.RequestException as e:
         print(f"Discord webhook 發送失敗: {e}")
+
 
 def main():
     live_streams = fetch_live("live")
