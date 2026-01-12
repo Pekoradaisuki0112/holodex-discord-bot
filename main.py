@@ -47,6 +47,17 @@ def build_embeds(live_streams, upcoming_streams):
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
 
+    # 直播中 - 被提及的頻道
+    live_mentioned = [s for s in live_streams if s["channel"]["id"] not in CHANNELS]
+    for s in live_mentioned:
+        stream_id = s["id"]
+        embeds.append({
+            "title": f"{s['channel']['name']} (提及)",
+            "description": f"[{s['title']}](https://youtu.be/{stream_id})",
+            "color": 0xFFB6C1,
+            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
+        })
+
     # 一小時後開播
     for s in upcoming_streams:
         if s["channel"]["id"] not in CHANNELS:
@@ -59,6 +70,21 @@ def build_embeds(live_streams, upcoming_streams):
                 "title": s["channel"]["name"],
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})\n預計開播時間: {time_str}",
                 "color": 0x00BFFF,
+                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
+            })
+
+    # 一小時後開播 - 被提及的頻道
+    for s in upcoming_streams:
+        if s["channel"]["id"] in CHANNELS:
+            continue
+        start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
+        if now <= start_time <= one_hour_later:
+            stream_id = s["id"]
+            time_str = start_time.strftime("%H:%M")
+            embeds.append({
+                "title": f"{s['channel']['name']} (提及)",
+                "description": f"[{s['title']}](https://youtu.be/{stream_id})\n預計開播時間: {time_str}",
+                "color": 0xADD8E6,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
 
