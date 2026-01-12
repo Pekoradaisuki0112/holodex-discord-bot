@@ -34,7 +34,7 @@ def build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mention
     embeds = []
 
     now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=1)
+    one_hour_later = now + timedelta(hours=5)
 
     # 直播中 - 主頻道
     for s in live_streams:
