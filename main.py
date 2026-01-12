@@ -30,26 +30,25 @@ def fetch_live(status, mentioned_channel_id=None):
         print(f"API 請求失敗: {e}")
         return []
 
-def build_embeds(live_streams, upcoming_streams):
+def build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams):
     embeds = []
 
     now = datetime.now(TWTZ)
     one_hour_later = now + timedelta(hours=1)
 
-    # 直播中
-    live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
-    for s in live_filtered:
-        stream_id = s["id"]
-        embeds.append({
-            "title": s["channel"]["name"],
-            "description": f"[{s['title']}](https://youtu.be/{stream_id})",
-            "color": 0xFF69B4,
-            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
-        })
+    # 直播中 - 主頻道
+    for s in live_streams:
+        if s["channel"]["id"] in CHANNELS:
+            stream_id = s["id"]
+            embeds.append({
+                "title": s["channel"]["name"],
+                "description": f"[{s['title']}](https://youtu.be/{stream_id})",
+                "color": 0xFF69B4,
+                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
+            })
 
     # 直播中 - 被提及的頻道
-    live_mentioned = [s for s in live_streams if s["channel"]["id"] not in CHANNELS]
-    for s in live_mentioned:
+    for s in mentioned_live_streams:
         stream_id = s["id"]
         embeds.append({
             "title": f"{s['channel']['name']} (提及)",
@@ -58,25 +57,22 @@ def build_embeds(live_streams, upcoming_streams):
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
 
-    # 一小時後開播
-    for s in upcoming_streams:
-        if s["channel"]["id"] not in CHANNELS:
-            continue
-        start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
-        if now <= start_time <= one_hour_later:
-            stream_id = s["id"]
-            time_str = start_time.strftime("%H:%M")
-            embeds.append({
-                "title": s["channel"]["name"],
-                "description": f"[{s['title']}](https://youtu.be/{stream_id})\n預計開播時間: {time_str}",
-                "color": 0x00BFFF,
-                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
-            })
-
-    # 一小時後開播 - 被提及的頻道
+    # 一小時後開播 - 主頻道
     for s in upcoming_streams:
         if s["channel"]["id"] in CHANNELS:
-            continue
+            start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
+            if now <= start_time <= one_hour_later:
+                stream_id = s["id"]
+                time_str = start_time.strftime("%H:%M")
+                embeds.append({
+                    "title": s["channel"]["name"],
+                    "description": f"[{s['title']}](https://youtu.be/{stream_id})\n預計開播時間: {time_str}",
+                    "color": 0x00BFFF,
+                    "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
+                })
+
+    # 一小時後開播 - 被提及的頻道
+    for s in mentioned_upcoming_streams:
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
@@ -116,11 +112,13 @@ def main():
     upcoming_streams = fetch_live("upcoming")
     
     # 查詢被提及我們頻道的串流
+    mentioned_live_streams = []
+    mentioned_upcoming_streams = []
     for channel_id in CHANNELS:
-        live_streams.extend(fetch_live("live", mentioned_channel_id=channel_id))
-        upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
+        mentioned_live_streams.extend(fetch_live("live", mentioned_channel_id=channel_id))
+        mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
     
-    embeds = build_embeds(live_streams, upcoming_streams)
+    embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
     send_discord(live_streams, embeds)
 
 if __name__ == "__main__":
