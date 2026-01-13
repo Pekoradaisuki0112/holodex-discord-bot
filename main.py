@@ -132,23 +132,9 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
 
 # ===== 主程式 =====
 def main():
-    live_streams = fetch_live("live")
-    upcoming_streams = fetch_live("upcoming")
+embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
+send_discord(live_streams, mentioned_live_streams, embeds)
 
-    mentioned_live_streams = []
-    mentioned_upcoming_streams = []
-    for channel_id in CHANNELS:
-        mentioned_live_streams.extend(fetch_live("live", mentioned_channel_id=channel_id))
-        mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
-
-    embeds, avatar_url = build_embeds(
-        live_streams,
-        upcoming_streams,
-        mentioned_live_streams,
-        mentioned_upcoming_streams
-    )
-
-    send_discord(embeds, avatar_url)
 
 
 if __name__ == "__main__":
