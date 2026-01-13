@@ -64,10 +64,8 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
     # 直播中的聯動
     for s, mentioned_ids in live_mentions:
         stream_id = s["id"]
-        # 將 ID 轉成名字
-        mentioned_names = [CHANNEL_NAMES.get(ch_id, ch_id) for ch_id in mentioned_ids]
         embeds.append({
-            "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_names)}",
+            "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_ids)}",
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFFB6C1,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
@@ -92,17 +90,14 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
-            # 將 ID 轉成名字
-            mentioned_names = [CHANNEL_NAMES.get(ch_id, ch_id) for ch_id in mentioned_ids]
             embeds.append({
-                "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_names)}",
+                "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_ids)}",
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0xADD8E6,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
 
     return embeds
-
 
 def send_discord(live_streams, live_mentions, embeds):
     if not embeds:
