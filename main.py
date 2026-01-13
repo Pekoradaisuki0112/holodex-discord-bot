@@ -111,7 +111,15 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
         print("沒有新的直播或即將開播的串流")
         return
 
-    avatar_url = get_avatar_url(live_streams, mentioned_live_streams)
+    # webhook avatar 取最新正在直播的主播頭像（包含主頻道和被提及的）
+    live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
+    all_live = live_filtered + mentioned_live_streams
+    
+    if all_live:
+        channel_id = all_live[-1]["channel"]["id"]
+        avatar_url = f"https://holodex.net/statics/channelImg/{channel_id}/100.png"
+    else:
+        avatar_url = "https://i.imgur.com/your-default-avatar.png"
 
     payload = {
         "username": "Holodex Notifier",
@@ -137,7 +145,7 @@ def main():
         mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
     
     embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
-    send_discord(live_streams, mentioned_live_streams, embeds)
+    send_discord(live_streams, mentioned_live_streams, embeds)  # 多傳一個參數
 
 if __name__ == "__main__":
     main()
