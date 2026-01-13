@@ -95,13 +95,26 @@ def build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mention
     return embeds, last_avatar_url
 
 
-# ===== Discord Webhook =====
-def send_discord(embeds, avatar_url):
+def send_discord(live_streams, mentioned_live_streams, embeds):
     if not embeds:
         print("沒有新的直播或即將開播的串流")
         return
 
-    if not avatar_url:
+    # 主頻道最後一個 live
+    main_last = None
+    for s in live_streams:
+        if s["channel"]["id"] in CHANNELS:
+            main_last = s
+
+    # 被提及最後一個 live
+    mention_last = mentioned_live_streams[-1] if mentioned_live_streams else None
+
+    # 決定頭像
+    if mention_last:
+        avatar_url = mention_last["channel"]["photo"]
+    elif main_last:
+        avatar_url = main_last["channel"]["photo"]
+    else:
         avatar_url = "https://i.imgur.com/your-default-avatar.png"
 
     payload = {
