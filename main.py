@@ -128,35 +128,25 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
 
     avatar_url = "https://i.imgur.com/your-default-avatar.png"
     
-    # 把所有正在直播的串流（主頻道 + 被提及）混在一起
-    all_live = []
+    # 把所有正在直播的混在一起
+    all_live_channels = []
     
     # 加入主頻道直播
     for s in live_streams:
         if s["channel"]["id"] in CHANNELS:
-            all_live.append({
-                "type": "main",
-                "channel_id": s["channel"]["id"],
-                "start_actual": s.get("start_actual")
-            })
+            all_live_channels.append(s["channel"]["id"])
     
-    # 加入被提及的直播
+    # 加入被提及的直播（用被提及的主頻道ID）
     for s in mentioned_live_streams:
         if "mentions" in s:
             for mention in s["mentions"]:
                 if mention["id"] in CHANNELS:
-                    all_live.append({
-                        "type": "mentioned",
-                        "channel_id": mention["id"],
-                        "start_actual": s.get("start_actual")
-                    })
+                    all_live_channels.append(mention["id"])
                     break
     
-    # 按開播時間排序，取最新的
-    if all_live:
-        all_live.sort(key=lambda x: x["start_actual"] or "")
-        latest = all_live[-1]
-        avatar_url = get_channel_photo(latest["channel_id"])
+    # 取最後一個
+    if all_live_channels:
+        avatar_url = get_channel_photo(all_live_channels[-1])
 
     payload = {
         "username": "Holodex Notifier",
@@ -169,6 +159,19 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
         r.raise_for_status()
     except requests.RequestException as e:
         print(f"Discord webhook 發送失敗: {e}")
+
+def main():
+    live_streams = fetch_live("live")
+    upcoming_streams = fetch_live("upcoming")
+    
+    mentioned_live_streams = []
+    mentioned_upcoming_streams = []
+    for channel_id in CHANNELS:
+        mentioned_live_streams.extend(fetch_live("live", mentioned_channel_id=channel_id))
+        mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
+    
+    embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
+    send_discord(live_streams, mentioned_live_streams, embeds)
 
 def main():
     live_streams = fetch_live("live")
