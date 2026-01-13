@@ -46,10 +46,9 @@ def fetch_mentions(status):
 
 def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mentions):
     embeds = []
-    stats = {"live": 0, "collab": 0, "upcoming": 0}
 
     now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=1)
+    one_hour_later = now + timedelta(hours=3)
 
     # 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
@@ -61,7 +60,6 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
             "color": 0xFF69B4,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
-        stats["live"] += 1
 
     # 直播中的聯動
     for s, mentioned_ids in live_mentions:
@@ -72,7 +70,6 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
             "color": 0xFFB6C1,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
-        stats["collab"] += 1
 
     # 一小時後開播
     for s in upcoming_streams:
@@ -87,7 +84,6 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
                 "color": 0x00BFFF,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
-            stats["upcoming"] += 1
 
     # 一小時後開播的聯動
     for s, mentioned_ids in upcoming_mentions:
@@ -97,25 +93,8 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
             embeds.append({
                 "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_ids)}",
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})",
-                "color": 0x90EE90,
+                "color": 0xADD8E6,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
-            })
-            stats["upcoming"] += 1  # 聯動待機也算在待機裡
-
-    # 建立統計訊息
-    if embeds:
-        summary_parts = []
-        if stats["live"] > 0:
-            summary_parts.append(f"直播中:{stats['live']}")
-        if stats["collab"] > 0:
-            summary_parts.append(f"聯動:{stats['collab']}")
-        if stats["upcoming"] > 0:
-            summary_parts.append(f"待機:{stats['upcoming']}")
-        
-        if summary_parts:
-            embeds.append({
-                "description": " ".join(summary_parts),
-                "color": 0x808080  # 灰色
             })
 
     return embeds
