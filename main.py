@@ -31,18 +31,18 @@ def fetch_mentions(status):
         )
         mentions = r.json()
         # 過濾掉已經在 CHANNELS 列表中的頻道（避免重複）
-        mentions = [s for s in mentions if s["channel"]["id"] not in CHANNELS]
-        all_mentions.extend(mentions)
+        filtered = [(s, channel_id) for s in mentions if s["channel"]["id"] not in CHANNELS]
+        all_mentions.extend(filtered)
     
-    # 去重（同一個直播可能提到多個追蹤的頻道）
-    seen = set()
-    unique_mentions = []
-    for s in all_mentions:
+    # 去重
+    seen = {}
+    for s, ch_id in all_mentions:
         if s["id"] not in seen:
-            seen.add(s["id"])
-            unique_mentions.append(s)
+            seen[s["id"]] = (s, [ch_id])
+        else:
+            seen[s["id"]][1].append(ch_id)
     
-    return unique_mentions
+    return [(s, ch_ids) for s, ch_ids in seen.values()]
 
 def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mentions):
     embeds = []
@@ -61,17 +61,13 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
 
-    # 直播中的聯動（提到追蹤頻道）
-    for s in live_mentions:
+    # 直播中的聯動
+    for s, mentioned_ids in live_mentions:
         stream_id = s["id"]
-        # 獲取被提到的追蹤頻道ID
-        mentioned_ids = [m["id"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
-        mention_text = f" 👥 {', '.join(mentioned_ids)}" if mentioned_ids else " 👥"
-        
         embeds.append({
-            "title": s["channel"]["name"] + mention_text,
+            "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_ids)}",
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
-            "color": 0xFFD700,  # 金色表示聯動
+            "color": 0xFFD700,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
 
@@ -90,25 +86,20 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
             })
 
     # 一小時後開播的聯動
-    for s in upcoming_mentions:
+    for s, mentioned_ids in upcoming_mentions:
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
-            # 獲取被提到的追蹤頻道ID
-            mentioned_ids = [m["id"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
-            mention_text = f" 👥 {', '.join(mentioned_ids)}" if mentioned_ids else " 👥"
-            
             embeds.append({
-                "title": s["channel"]["name"] + mention_text,
+                "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_ids)}",
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})",
-                "color": 0x90EE90,  # 淺綠色表示即將開始的聯動
+                "color": 0x90EE90,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
 
     return embeds
 
 def send_discord(live_streams, embeds):
-    # webhook avatar 取最新正在直播的主播頭像
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
     avatar_url = live_filtered[-1]["channel"]["photo"] if live_filtered else "https://i.imgur.com/your-default-avatar.png"
 
@@ -123,13 +114,12 @@ def main():
     live_streams = fetch_live("live")
     upcoming_streams = fetch_live("upcoming")
     
-    # 獲取提到追蹤頻道的直播
     live_mentions = fetch_mentions("live")
     upcoming_mentions = fetch_mentions("upcoming")
     
     embeds = build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mentions)
     
-    if embeds:  # 只在有內容時才發送
+    if embeds:
         send_discord(live_streams, embeds)
 
 if __name__ == "__main__":
