@@ -126,24 +126,37 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
         print("沒有新的直播或即將開播的串流")
         return
 
-    # 找最新正在直播的串流來決定頭像
     avatar_url = "https://i.imgur.com/your-default-avatar.png"
     
-    # 先檢查主頻道有沒有正在直播
-    main_live = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
-    if main_live:
-        # 有主頻道直播，用主頻道頭像
-        avatar_url = get_channel_photo(main_live[-1]["channel"]["id"])
-    else:
-        # 沒有主頻道直播，檢查被提及的直播
-        if mentioned_live_streams:
-            # 找出被提及的主頻道 ID
-            last_mentioned = mentioned_live_streams[-1]
-            if "mentions" in last_mentioned:
-                for mention in last_mentioned["mentions"]:
-                    if mention["id"] in CHANNELS:
-                        avatar_url = get_channel_photo(mention["id"])
-                        break
+    # 把所有正在直播的串流（主頻道 + 被提及）混在一起
+    all_live = []
+    
+    # 加入主頻道直播
+    for s in live_streams:
+        if s["channel"]["id"] in CHANNELS:
+            all_live.append({
+                "type": "main",
+                "channel_id": s["channel"]["id"],
+                "start_actual": s.get("start_actual")
+            })
+    
+    # 加入被提及的直播
+    for s in mentioned_live_streams:
+        if "mentions" in s:
+            for mention in s["mentions"]:
+                if mention["id"] in CHANNELS:
+                    all_live.append({
+                        "type": "mentioned",
+                        "channel_id": mention["id"],
+                        "start_actual": s.get("start_actual")
+                    })
+                    break
+    
+    # 按開播時間排序，取最新的
+    if all_live:
+        all_live.sort(key=lambda x: x["start_actual"] or "")
+        latest = all_live[-1]
+        avatar_url = get_channel_photo(latest["channel_id"])
 
     payload = {
         "username": "Holodex Notifier",
