@@ -49,7 +49,7 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
     stats = {"live": 0, "collab": 0, "upcoming": 0}
 
     now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=3)
+    one_hour_later = now + timedelta(hours=1)
 
     # 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
@@ -69,7 +69,7 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
         embeds.append({
             "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_ids)}",
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
-            "color": 0xFFD700,
+            "color": 0xFFB6C1,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
         stats["collab"] += 1
