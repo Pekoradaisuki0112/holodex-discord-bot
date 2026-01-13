@@ -1,150 +1,135 @@
 import requests, json, os
 from datetime import datetime, timedelta, timezone
 
-# 驗證環境變數
-try:
-    API_KEY = os.environ["HOLODEX_API_KEY"]
-    WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
-except KeyError as e:
-    raise ValueError(f"缺少環境變數: {e}")
+API_KEY = os.environ["HOLODEX_API_KEY"]
+WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 
 with open("channels.json") as f:
     CHANNELS = json.load(f)
 
 TWTZ = timezone(timedelta(hours=8))
 
-def fetch_live(status, mentioned_channel_id=None):
-    try:
-        params = {"status": status}
-        if mentioned_channel_id:
-            params["mentioned_channel_id"] = mentioned_channel_id
+def fetch_live(status):
+    r = requests.get(
+        "https://holodex.net/api/v2/live",
+        headers={"X-APIKEY": API_KEY},
+        params={"status": status}
+    )
+    return r.json()
+
+def fetch_mentions(status):
+    """獲取提到追蹤頻道的直播（聯動）"""
+    all_mentions = []
+    for channel_id in CHANNELS:
         r = requests.get(
             "https://holodex.net/api/v2/live",
             headers={"X-APIKEY": API_KEY},
-            params=params,
-            timeout=10
+            params={
+                "status": status,
+                "mentioned_channel_id": channel_id
+            }
         )
-        r.raise_for_status()
-        return r.json()
-    except requests.RequestException as e:
-        print(f"API 請求失敗: {e}")
-        return []
+        mentions = r.json()
+        # 過濾掉已經在 CHANNELS 列表中的頻道（避免重複）
+        mentions = [s for s in mentions if s["channel"]["id"] not in CHANNELS]
+        all_mentions.extend(mentions)
+    
+    # 去重（同一個直播可能提到多個追蹤的頻道）
+    seen = set()
+    unique_mentions = []
+    for s in all_mentions:
+        if s["id"] not in seen:
+            seen.add(s["id"])
+            unique_mentions.append(s)
+    
+    return unique_mentions
 
-def build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams):
+def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mentions):
     embeds = []
 
     now = datetime.now(TWTZ)
-    three_hours_later = now + timedelta(hours=3)
+    one_hour_later = now + timedelta(hours=1)
 
-    # 直播中 - 主頻道
-    for s in live_streams:
-        if s["channel"]["id"] in CHANNELS:
-            stream_id = s["id"]
-            embeds.append({
-                "title": s["channel"]["name"],
-                "description": f"[{s['title']}](https://youtu.be/{stream_id})",
-                "color": 0xFF69B4,
-                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
-            })
-
-    # 直播中 - 被提及的頻道
-    for s in mentioned_live_streams:
+    # 直播中
+    live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
+    for s in live_filtered:
         stream_id = s["id"]
         embeds.append({
-            "title": f"{s['channel']['name']} (提及)",
+            "title": s["channel"]["name"],
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFF69B4,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
 
-    # 三小時後開播 - 主頻道
-    for s in upcoming_streams:
-        if s["channel"]["id"] in CHANNELS:
-            start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
-            if now <= start_time <= three_hours_later:
-                stream_id = s["id"]
-                time_str = start_time.strftime("%H:%M")
-                embeds.append({
-                    "title": s["channel"]["name"],
-                    "description": f"[{s['title']}](https://youtu.be/{stream_id})\n預計開播時間: {time_str}",
-                    "color": 0x00BFFF,
-                    "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
-                })
+    # 直播中的聯動（提到追蹤頻道）
+    for s in live_mentions:
+        stream_id = s["id"]
+        # 獲取被提到的追蹤頻道名稱
+        mentioned_names = [m["name"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
+        mention_text = f" 👥 聯動: {', '.join(mentioned_names)}" if mentioned_names else " 👥 聯動"
+        
+        embeds.append({
+            "title": s["channel"]["name"] + mention_text,
+            "description": f"[{s['title']}](https://youtu.be/{stream_id})",
+            "color": 0xFFD700,  # 金色表示聯動
+            "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
+        })
 
-    # 三小時後開播 - 被提及的頻道
-    for s in mentioned_upcoming_streams:
+    # 一小時後開播
+    for s in upcoming_streams:
+        if s["channel"]["id"] not in CHANNELS:
+            continue
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
-        if now <= start_time <= three_hours_later:
+        if now <= start_time <= one_hour_later:
             stream_id = s["id"]
-            time_str = start_time.strftime("%H:%M")
             embeds.append({
-                "title": f"{s['channel']['name']} (提及)",
-                "description": f"[{s['title']}](https://youtu.be/{stream_id})\n預計開播時間: {time_str}",
+                "title": s["channel"]["name"],
+                "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0x00BFFF,
+                "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
+            })
+
+    # 一小時後開播的聯動
+    for s in upcoming_mentions:
+        start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
+        if now <= start_time <= one_hour_later:
+            stream_id = s["id"]
+            mentioned_names = [m["name"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
+            mention_text = f" 👥 聯動: {', '.join(mentioned_names)}" if mentioned_names else " 👥 聯動"
+            
+            embeds.append({
+                "title": s["channel"]["name"] + mention_text,
+                "description": f"[{s['title']}](https://youtu.be/{stream_id})",
+                "color": 0x90EE90,  # 淺綠色表示即將開始的聯動
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
 
     return embeds
 
-def get_avatar_url(live_streams, mentioned_live_streams):
-    """決定 webhook 的頭像"""
-    # 優先使用主頻道直播
-    live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
-    if live_filtered:
-        return live_filtered[-1]["channel"]["photo"]
-    
-    # 如果沒有主頻道直播，使用被提及頻道中的主頻道頭像
-    if mentioned_live_streams:
-        # 從 mentioned_live_streams 找出被提及的主頻道 ID
-        for s in mentioned_live_streams:
-            mentions = s.get("mentions", [])
-            for mention in mentions:
-                if mention in CHANNELS:
-                    # 直接用 channel ID 組頭像 URL
-                    return f"https://holodex.net/statics/channelImg/{mention}/100.png"
-    
-    # 預設頭像
-    return "https://i.imgur.com/your-default-avatar.png"
-
 def send_discord(live_streams, embeds):
-    if not embeds:
-        print("沒有新的直播或即將開播的串流")
-        return
-
-    # 找出最新的直播來決定頭像
+    # webhook avatar 取最新正在直播的主播頭像
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
-    
-    if live_filtered:
-        channel_id = live_filtered[-1]["channel"]["id"]
-        avatar_url = f"https://holodex.net/statics/channelImg/{channel_id}/100.png"
-    else:
-        avatar_url = "https://i.imgur.com/your-default-avatar.png"
+    avatar_url = live_filtered[-1]["channel"]["photo"] if live_filtered else "https://i.imgur.com/your-default-avatar.png"
 
     payload = {
         "username": "Holodex Notifier",
         "avatar_url": avatar_url,
         "embeds": embeds
     }
-    
-    try:
-        r = requests.post(WEBHOOK_URL, json=payload, timeout=10)
-        r.raise_for_status()
-    except requests.RequestException as e:
-        print(f"Discord webhook 發送失敗: {e}")
+    requests.post(WEBHOOK_URL, json=payload)
 
 def main():
     live_streams = fetch_live("live")
     upcoming_streams = fetch_live("upcoming")
     
-    # 查詢被提及我們頻道的串流
-    mentioned_live_streams = []
-    mentioned_upcoming_streams = []
-    for channel_id in CHANNELS:
-        mentioned_live_streams.extend(fetch_live("live", mentioned_channel_id=channel_id))
-        mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
+    # 獲取提到追蹤頻道的直播
+    live_mentions = fetch_mentions("live")
+    upcoming_mentions = fetch_mentions("upcoming")
     
-    embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
-    send_discord(live_streams, embeds)
+    embeds = build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mentions)
+    
+    if embeds:  # 只在有內容時才發送
+        send_discord(live_streams, embeds)
 
 if __name__ == "__main__":
     main()
