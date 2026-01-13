@@ -48,7 +48,7 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
     embeds = []
 
     now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=3)
+    one_hour_later = now + timedelta(hours=1)
 
     # 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
