@@ -111,15 +111,24 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
         print("沒有新的直播或即將開播的串流")
         return
 
-    # webhook avatar 取最新正在直播的主播頭像（包含主頻道和被提及的）
+    # 判斷最新正在直播的是主頻道還是被提及
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
-    all_live = live_filtered + mentioned_live_streams
     
-    if all_live:
-        channel_id = all_live[-1]["channel"]["id"]
-        avatar_url = f"https://holodex.net/statics/channelImg/{channel_id}/100.png"
+    if live_filtered:
+        # 最新是主頻道直播，用主頻道頭像
+        channel_id = live_filtered[-1]["channel"]["id"]
+    elif mentioned_live_streams:
+        # 最新是被提及的直播，用被提及的主頻道頭像
+        # 從 mentions 中找出我們追隨的頻道
+        last_stream = mentioned_live_streams[-1]
+        mentioned_ids = [m["id"] for m in last_stream.get("mentions", [])]
+        # 找出在我們 CHANNELS 列表中的頻道
+        our_channel = next((cid for cid in mentioned_ids if cid in CHANNELS), None)
+        channel_id = our_channel if our_channel else list(CHANNELS)[0]  # fallback 到第一個主頻道
     else:
-        avatar_url = "https://i.imgur.com/your-default-avatar.png"
+        channel_id = None
+    
+    avatar_url = f"https://holodex.net/statics/channelImg/{channel_id}/100.png" if channel_id else "https://i.imgur.com/your-default-avatar.png"
 
     payload = {
         "username": "Holodex Notifier",
