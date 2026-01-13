@@ -98,29 +98,22 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
         # 有主頻道直播，用主頻道頭像
         avatar_url = live_filtered[-1]["channel"]["photo"]
     else:
-        # 沒有主頻道直播，從被提及的串流中找出第一個被提及的主頻道頭像
-        avatar_url = "https://i.imgur.com/your-default-avatar.png"  # 預設
+        # 沒有主頻道直播，直接用 CHANNELS 第一個頻道的頭像
+        avatar_url = "https://i.imgur.com/your-default-avatar.png"
         
-        for s in mentioned_live_streams:
-            # 找出這個串流提及了哪個我們追隨的頻道
-            if "mentions" in s:
-                for mention in s["mentions"]:
-                    if mention["id"] in CHANNELS:
-                        # 用 API 獲取我們追隨的頻道頭像
-                        try:
-                            r = requests.get(
-                                f"https://holodex.net/api/v2/channels/{mention['id']}",
-                                headers={"X-APIKEY": API_KEY},
-                                timeout=10
-                            )
-                            r.raise_for_status()
-                            channel_data = r.json()
-                            avatar_url = channel_data.get("photo", avatar_url)
-                            break
-                        except requests.RequestException:
-                            pass
-            if avatar_url != "https://i.imgur.com/your-default-avatar.png":
-                break
+        if CHANNELS:
+            first_channel_id = CHANNELS[0]
+            try:
+                r = requests.get(
+                    f"https://holodex.net/api/v2/channels/{first_channel_id}",
+                    headers={"X-APIKEY": API_KEY},
+                    timeout=10
+                )
+                r.raise_for_status()
+                channel_data = r.json()
+                avatar_url = channel_data.get("photo", avatar_url)
+            except requests.RequestException as e:
+                print(f"無法獲取頻道頭像: {e}")
 
     payload = {
         "username": "Holodex Notifier",
