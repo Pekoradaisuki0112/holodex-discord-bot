@@ -130,7 +130,10 @@ def main():
         mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
     
     embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
-    send_discord(live_streams, embeds)
+    
+    # 傳送 webhook
+    send_discord(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams, embeds)
+
 
 if __name__ == "__main__":
     main()
