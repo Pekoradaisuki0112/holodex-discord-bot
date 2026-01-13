@@ -66,7 +66,7 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
         stream_id = s["id"]
         # 獲取被提到的追蹤頻道名稱
         mentioned_names = [m["name"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
-        mention_text = f" 👥 聯動: {', '.join(mentioned_names)}" if mentioned_names else " 👥 聯動"
+        mention_text = f" 👥 {', '.join(mentioned_names)}" if mentioned_names else ""
         
         embeds.append({
             "title": s["channel"]["name"] + mention_text,
@@ -95,7 +95,7 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
             mentioned_names = [m["name"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
-            mention_text = f" 👥 聯動: {', '.join(mentioned_names)}" if mentioned_names else " 👥 聯動"
+            mention_text = f" 👥 {', '.join(mentioned_names)}" if mentioned_names else ""
             
             embeds.append({
                 "title": s["channel"]["name"] + mention_text,
