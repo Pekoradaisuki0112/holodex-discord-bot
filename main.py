@@ -1,7 +1,6 @@
 import requests, json, os
 from datetime import datetime, timedelta, timezone
 
-# 驗證環境變數
 API_KEY = os.environ["HOLODEX_API_KEY"]
 WEBHOOK_URL = os.environ["DISCORD_WEBHOOK_URL"]
 
@@ -51,10 +50,6 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
     now = datetime.now(TWTZ)
     one_hour_later = now + timedelta(hours=3)
 
-    # 讀取 ID -> 名字對照表
-    with open("mentioned_channels.json") as f:
-        ID_TO_NAME = json.load(f)
-
     # 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
     for s in live_filtered:
@@ -69,9 +64,8 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
     # 直播中的聯動
     for s, mentioned_ids in live_mentions:
         stream_id = s["id"]
-        mentioned_names = [ID_TO_NAME.get(ch_id, ch_id) for ch_id in mentioned_ids]
         embeds.append({
-            "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_names)}",
+            "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_ids)}",
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFFB6C1,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
@@ -96,9 +90,8 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
-            mentioned_names = [ID_TO_NAME.get(ch_id, ch_id) for ch_id in mentioned_ids]
             embeds.append({
-                "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_names)}",
+                "title": f"{s['channel']['name']} 👥 {', '.join(mentioned_ids)}",
                 "description": f"[{s['title']}](https://youtu.be/{stream_id})",
                 "color": 0xADD8E6,
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
