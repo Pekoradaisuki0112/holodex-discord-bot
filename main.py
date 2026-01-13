@@ -49,7 +49,7 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
     live_info = []  # 記錄正在直播的資訊,用來決定頭像
 
     now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=1)
+    one_hour_later = now + timedelta(hours=3)
 
     # 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
