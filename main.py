@@ -126,27 +126,24 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
         print("沒有新的直播或即將開播的串流")
         return
 
+    # 找最新正在直播的串流來決定頭像
     avatar_url = "https://i.imgur.com/your-default-avatar.png"
     
-    # 把所有正在直播的混在一起
-    all_live_channels = []
-    
-    # 加入主頻道直播
-    for s in live_streams:
-        if s["channel"]["id"] in CHANNELS:
-            all_live_channels.append(s["channel"]["id"])
-    
-    # 加入被提及的直播（用被提及的主頻道ID）
-    for s in mentioned_live_streams:
-        if "mentions" in s:
-            for mention in s["mentions"]:
-                if mention["id"] in CHANNELS:
-                    all_live_channels.append(mention["id"])
-                    break
-    
-    # 取最後一個
-    if all_live_channels:
-        avatar_url = get_channel_photo(all_live_channels[-1])
+    # 先檢查主頻道有沒有正在直播
+    main_live = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
+    if main_live:
+        # 有主頻道直播，用主頻道頭像
+        avatar_url = get_channel_photo(main_live[-1]["channel"]["id"])
+    else:
+        # 沒有主頻道直播，檢查被提及的直播
+        if mentioned_live_streams:
+            # 找出被提及的主頻道 ID
+            last_mentioned = mentioned_live_streams[-1]
+            if "mentions" in last_mentioned:
+                for mention in last_mentioned["mentions"]:
+                    if mention["id"] in CHANNELS:
+                        avatar_url = get_channel_photo(mention["id"])
+                        break
 
     payload = {
         "username": "Holodex Notifier",
@@ -159,6 +156,20 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
         r.raise_for_status()
     except requests.RequestException as e:
         print(f"Discord webhook 發送失敗: {e}")
+
+def main():
+    live_streams = fetch_live("live")
+    upcoming_streams = fetch_live("upcoming")
+    
+    # 查詢被提及我們頻道的串流
+    mentioned_live_streams = []
+    mentioned_upcoming_streams = []
+    for channel_id in CHANNELS:
+        mentioned_live_streams.extend(fetch_live("live", mentioned_channel_id=channel_id))
+        mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
+    
+    embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
+    send_discord(live_streams, mentioned_live_streams, embeds)
 
 def main():
     live_streams = fetch_live("live")
