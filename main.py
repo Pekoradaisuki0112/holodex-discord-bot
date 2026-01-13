@@ -48,7 +48,7 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
     embeds = []
 
     now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=3)
+    one_hour_later = now + timedelta(hours=1)
 
     # 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
@@ -64,9 +64,9 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
     # 直播中的聯動（提到追蹤頻道）
     for s in live_mentions:
         stream_id = s["id"]
-        # 獲取被提到的追蹤頻道名稱
-        mentioned_names = [m["name"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
-        mention_text = f" 👥 {', '.join(mentioned_names)}" if mentioned_names else ""
+        # 獲取被提到的追蹤頻道ID
+        mentioned_ids = [m["id"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
+        mention_text = f" 👥 {', '.join(mentioned_ids)}" if mentioned_ids else " 👥"
         
         embeds.append({
             "title": s["channel"]["name"] + mention_text,
@@ -94,8 +94,9 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
         start_time = datetime.fromisoformat(s["start_scheduled"].replace("Z","+00:00")).astimezone(TWTZ)
         if now <= start_time <= one_hour_later:
             stream_id = s["id"]
-            mentioned_names = [m["name"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
-            mention_text = f" 👥 {', '.join(mentioned_names)}" if mentioned_names else ""
+            # 獲取被提到的追蹤頻道ID
+            mentioned_ids = [m["id"] for m in s.get("mentions", []) if m["id"] in CHANNELS]
+            mention_text = f" 👥 {', '.join(mentioned_ids)}" if mentioned_ids else " 👥"
             
             embeds.append({
                 "title": s["channel"]["name"] + mention_text,
