@@ -30,20 +30,6 @@ def fetch_live(status, mentioned_channel_id=None):
         print(f"API 請求失敗: {e}")
         return []
 
-def fetch_channel_info(channel_id):
-    """取得頻道資訊（包含頭像）"""
-    try:
-        r = requests.get(
-            f"https://holodex.net/api/v2/channels/{channel_id}",
-            headers={"X-APIKEY": API_KEY},
-            timeout=10
-        )
-        r.raise_for_status()
-        return r.json()
-    except requests.RequestException as e:
-        print(f"取得頻道資訊失敗: {e}")
-        return None
-
 def build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams):
     embeds = []
 
@@ -107,18 +93,15 @@ def get_avatar_url(live_streams, mentioned_live_streams):
     if live_filtered:
         return live_filtered[-1]["channel"]["photo"]
     
-    # 如果沒有主頻道直播，使用被提及頻道的主頻道頭像
+    # 如果沒有主頻道直播，使用被提及頻道中的主頻道頭像
     if mentioned_live_streams:
         # 從 mentioned_live_streams 找出被提及的主頻道 ID
         for s in mentioned_live_streams:
-            # 從 mentions 中找出我們追蹤的頻道
             mentions = s.get("mentions", [])
             for mention in mentions:
                 if mention in CHANNELS:
-                    # 用 API 取得該主頻道的頭像
-                    channel_info = fetch_channel_info(mention)
-                    if channel_info:
-                        return channel_info.get("photo", "https://i.imgur.com/your-default-avatar.png")
+                    # 直接用 channel ID 組頭像 URL
+                    return f"https://holodex.net/statics/channelImg/{mention}/100.png"
     
     # 預設頭像
     return "https://i.imgur.com/your-default-avatar.png"
