@@ -96,26 +96,28 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
     
     if embeds:
         last_embed = embeds[-1]
+        title = last_embed["title"]
         
-        # 如果最新是主頻道直播
-        if "(提及)" not in last_embed["title"]:
+        # 如果最新是主頻道直播（沒有"(提及)"標記）
+        if "(提及)" not in title:
             # 從 live_streams 中找對應的頻道
             for s in live_streams:
-                if s["channel"]["name"] == last_embed["title"]:
+                if s["channel"]["id"] in CHANNELS and s["channel"]["name"] == title:
                     avatar_url = s["channel"]["photo"]
                     break
         else:
-            # 如果最新是被提及的直播，找出是哪個主頻道被提及
+            # 如果最新是被提及的直播
+            # 從 mentioned_live_streams 找這個串流
+            clean_title = title.replace(" (提及)", "")
             for s in mentioned_live_streams:
-                # 找出被提及的主頻道
-                if "mentions" in s:
-                    for mention in s["mentions"]:
-                        if mention["id"] in CHANNELS:
-                            # 用被提及的主頻道頭像
-                            avatar_url = mention["photo"]
-                            break
-                    if avatar_url != "https://i.imgur.com/your-default-avatar.png":
-                        break
+                if s["channel"]["name"] == clean_title:
+                    # 找出這個串流提及了哪個我們追蹤的頻道
+                    if "mentions" in s and s["mentions"]:
+                        for mention in s["mentions"]:
+                            if mention["id"] in CHANNELS:
+                                avatar_url = mention["photo"]
+                                break
+                    break
 
     payload = {
         "username": "Holodex Notifier",
