@@ -46,10 +46,9 @@ def fetch_mentions(status):
 
 def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mentions):
     embeds = []
-    live_info = []  # 記錄正在直播的資訊,用來決定頭像
 
     now = datetime.now(TWTZ)
-    one_hour_later = now + timedelta(hours=3)
+    one_hour_later = now + timedelta(hours=1)
 
     # 直播中
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
@@ -61,10 +60,6 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
             "color": 0xFF69B4,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
         })
-        live_info.append({
-            "type": "direct",
-            "channel_id": s["channel"]["id"]
-        })
 
     # 直播中的聯動
     for s, mentioned_ids in live_mentions:
@@ -74,10 +69,6 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
             "description": f"[{s['title']}](https://youtu.be/{stream_id})",
             "color": 0xFFD700,
             "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
-        })
-        live_info.append({
-            "type": "mentioned",
-            "mentioned_channel_id": mentioned_ids[0]
         })
 
     # 一小時後開播
@@ -106,20 +97,25 @@ def build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mention
                 "thumbnail": {"url": f"https://img.youtube.com/vi/{stream_id}/mqdefault.jpg"}
             })
 
-    return embeds, live_info
+    return embeds
 
-def send_discord(embeds, live_info):
+def send_discord(live_streams, live_mentions, embeds):
     if not embeds:
         return
     
-    # 根據最新的「正在直播」決定頭像
-    if live_info:
-        latest_live = live_info[-1]
-        if latest_live["type"] == "direct":
-            avatar_url = f"https://holodex.net/statics/channelImg/{latest_live['channel_id']}/100.png"
-        else:  # mentioned
-            avatar_url = f"https://holodex.net/statics/channelImg/{latest_live['mentioned_channel_id']}/100.png"
+    # 優先使用主頻道直播的頭像
+    live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
+    
+    if live_filtered:
+        # 有主頻道正在直播,用主頻道頭像
+        channel_id = live_filtered[-1]["channel"]["id"]
+        avatar_url = f"https://holodex.net/statics/channelImg/{channel_id}/100.png"
+    elif live_mentions:
+        # 只有聯動直播,用被提及的頻道頭像
+        _, mentioned_ids = live_mentions[-1]
+        avatar_url = f"https://holodex.net/statics/channelImg/{mentioned_ids[0]}/100.png"
     else:
+        # 都沒有,用預設頭像
         avatar_url = "https://i.imgur.com/your-default-avatar.png"
     
     payload = {
@@ -136,10 +132,10 @@ def main():
     live_mentions = fetch_mentions("live")
     upcoming_mentions = fetch_mentions("upcoming")
     
-    embeds, live_info = build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mentions)
+    embeds = build_embeds(live_streams, upcoming_streams, live_mentions, upcoming_mentions)
     
     if embeds:
-        send_discord(embeds, live_info)
+        send_discord(live_streams, live_mentions, embeds)
 
 if __name__ == "__main__":
     main()
