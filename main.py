@@ -98,14 +98,24 @@ def send_discord(live_streams, mentioned_live_streams, embeds):
         # 有主頻道直播，用主頻道頭像
         avatar_url = live_filtered[-1]["channel"]["photo"]
     else:
-        # 沒有主頻道直播，直接用 CHANNELS 第一個頻道的頭像
+        # 沒有主頻道直播，找出被提及的主頻道ID
         avatar_url = "https://i.imgur.com/your-default-avatar.png"
+        mentioned_channel_id = None
         
-        if CHANNELS:
-            first_channel_id = CHANNELS[0]
+        for s in mentioned_live_streams:
+            if "mentions" in s:
+                for mention in s["mentions"]:
+                    if mention["id"] in CHANNELS:
+                        mentioned_channel_id = mention["id"]
+                        break
+            if mentioned_channel_id:
+                break
+        
+        # 用 API 抓被提及的主頻道頭像
+        if mentioned_channel_id:
             try:
                 r = requests.get(
-                    f"https://holodex.net/api/v2/channels/{first_channel_id}",
+                    f"https://holodex.net/api/v2/channels/{mentioned_channel_id}",
                     headers={"X-APIKEY": API_KEY},
                     timeout=10
                 )
