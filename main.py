@@ -106,29 +106,19 @@ def get_avatar_url(live_streams, mentioned_live_streams):
     # 預設頭像
     return "https://i.imgur.com/your-default-avatar.png"
 
-def send_discord(live_streams, mentioned_live_streams, embeds):
+def send_discord(live_streams, embeds):
     if not embeds:
         print("沒有新的直播或即將開播的串流")
         return
 
-    # 判斷最新正在直播的是主頻道還是被提及
+    # 找出最新的直播來決定頭像
     live_filtered = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
     
     if live_filtered:
-        # 最新是主頻道直播，用主頻道頭像
         channel_id = live_filtered[-1]["channel"]["id"]
-    elif mentioned_live_streams:
-        # 最新是被提及的直播，用被提及的主頻道頭像
-        # 從 mentions 中找出我們追隨的頻道
-        last_stream = mentioned_live_streams[-1]
-        mentioned_ids = [m["id"] for m in last_stream.get("mentions", [])]
-        # 找出在我們 CHANNELS 列表中的頻道
-        our_channel = next((cid for cid in mentioned_ids if cid in CHANNELS), None)
-        channel_id = our_channel if our_channel else list(CHANNELS)[0]  # fallback 到第一個主頻道
+        avatar_url = f"https://holodex.net/statics/channelImg/{channel_id}/100.png"
     else:
-        channel_id = None
-    
-    avatar_url = f"https://holodex.net/statics/channelImg/{channel_id}/100.png" if channel_id else "https://i.imgur.com/your-default-avatar.png"
+        avatar_url = "https://i.imgur.com/your-default-avatar.png"
 
     payload = {
         "username": "Holodex Notifier",
@@ -154,7 +144,7 @@ def main():
         mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
     
     embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
-    send_discord(live_streams, mentioned_live_streams, embeds)  # 多傳一個參數
+    send_discord(live_streams, embeds)
 
 if __name__ == "__main__":
     main()
