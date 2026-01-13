@@ -121,29 +121,23 @@ def build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mention
 
     return embeds
 
-def send_discord(live_streams, mentioned_live_streams, embeds):
+def send_discord(embeds):
     if not embeds:
         print("沒有新的直播或即將開播的串流")
         return
 
-    # 找最新正在直播的串流來決定頭像
-    avatar_url = "https://i.imgur.com/your-default-avatar.png"
+    # 取最新 embed 的 channel_id 去抓頭像
+    last_embed = embeds[-1]
+    channel_id = last_embed.get("channel_id")
     
-    # 先檢查主頻道有沒有正在直播
-    main_live = [s for s in live_streams if s["channel"]["id"] in CHANNELS]
-    if main_live:
-        # 有主頻道直播，用主頻道頭像
-        avatar_url = get_channel_photo(main_live[-1]["channel"]["id"])
+    if channel_id:
+        avatar_url = get_channel_photo(channel_id)
     else:
-        # 沒有主頻道直播，檢查被提及的直播
-        if mentioned_live_streams:
-            # 找出被提及的主頻道 ID
-            last_mentioned = mentioned_live_streams[-1]
-            if "mentions" in last_mentioned:
-                for mention in last_mentioned["mentions"]:
-                    if mention["id"] in CHANNELS:
-                        avatar_url = get_channel_photo(mention["id"])
-                        break
+        avatar_url = "https://i.imgur.com/your-default-avatar.png"
+    
+    # 移除 channel_id 避免送到 Discord
+    for embed in embeds:
+        embed.pop("channel_id", None)
 
     payload = {
         "username": "Holodex Notifier",
@@ -169,34 +163,7 @@ def main():
         mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
     
     embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
-    send_discord(live_streams, mentioned_live_streams, embeds)
-
-def main():
-    live_streams = fetch_live("live")
-    upcoming_streams = fetch_live("upcoming")
-    
-    mentioned_live_streams = []
-    mentioned_upcoming_streams = []
-    for channel_id in CHANNELS:
-        mentioned_live_streams.extend(fetch_live("live", mentioned_channel_id=channel_id))
-        mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
-    
-    embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
-    send_discord(live_streams, mentioned_live_streams, embeds)
-
-def main():
-    live_streams = fetch_live("live")
-    upcoming_streams = fetch_live("upcoming")
-    
-    # 查詢被提及我們頻道的串流
-    mentioned_live_streams = []
-    mentioned_upcoming_streams = []
-    for channel_id in CHANNELS:
-        mentioned_live_streams.extend(fetch_live("live", mentioned_channel_id=channel_id))
-        mentioned_upcoming_streams.extend(fetch_live("upcoming", mentioned_channel_id=channel_id))
-    
-    embeds = build_embeds(live_streams, upcoming_streams, mentioned_live_streams, mentioned_upcoming_streams)
-    send_discord(live_streams, mentioned_live_streams, embeds)
+    send_discord(embeds)
 
 if __name__ == "__main__":
     main()
